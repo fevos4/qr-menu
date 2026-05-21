@@ -1,61 +1,45 @@
+import { supabase } from "./supabase"
 import { MenuItem, Category, Restaurant } from "@/types"
 
-export const restaurant: Restaurant = {
-  id: "rest_001",
-  name: "Fresh Cafe",
-  slogan: "Enjoy your coffee!" 
+export async function getRestaurant(id: string): Promise<Restaurant | null> {
+  const { data, error } = await supabase
+    .from("restaurants")
+    .select("*")
+    .eq("id", id)
+    .single()
+
+  if (error) {
+    console.error(error)
+    return null
+  }
+
+  return data
 }
 
-export const categories: Category[] = [
-  {
-    id: "001",
-    name: "Drinks",
-    restaurantId: "rest_001"
-  },
-  {
-    id: "002",
-    name: "Food",
-    restaurantId: "rest_001"
-  },
-  {
-    id: "003",
-    name: "Desserts",
-    restaurantId: "rest_001"
-  }
-]
+export async function getCategories(restaurantId: string): Promise<Category[]> {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("restaurant_id", restaurantId)
 
-export const menuItems: MenuItem[] = [
-  {
-    id: "item_001",
-    name: "Iced Latte",
-    price: 4.50,
-    isPopular: true,
-    isAvailable: false,
-    description: "A refreshing blend of espresso and milk served over ice.",
-    categoryId: "001",
-    restaurantId: "rest_001",
-    preparationTime: 5
-  },{
-  id: "item_002",
-  name: "Avocado Toast",
-  price: 6.0,
-  isPopular: true,
-  isAvailable: true,
-  description: "Toasted bread topped with mashed avocado, cherry tomatoes, and a sprinkle of salt.",
-  categoryId: "002",
-  restaurantId: "rest_001",   
-  preparationTime: 10
-  },
-  {
-    id: "item_003",
-    name: "Chocolate Cake",
-    price: 5.0,
-    isPopular: false,
-    isAvailable: true,
-    description: "Rich and moist chocolate cake topped with a layer of chocolate ganache.",
-    categoryId: "003",
-    restaurantId: "rest_001",
-    preparationTime: 15
+  if (error) {
+    console.error(error)
+    return []
   }
-  
-]
+
+  return data
+}
+
+export async function getMenuItems(restaurantId: string): Promise<MenuItem[]> {
+  const { data, error } = await supabase
+    .from("menu_items")
+    .select("*")
+    .eq("restaurant_id", restaurantId)
+
+  if (error) {
+    console.error(error)
+    return []
+  }
+
+  return data
+}

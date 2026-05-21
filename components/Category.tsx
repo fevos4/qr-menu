@@ -10,7 +10,7 @@ export default function CategoryTabs({ categories, menuItems }: {
 }) {
   const [selected, setSelected] = useState(categories[0].id)
 
-  const filteredItems = menuItems.filter((item) => item.categoryId === selected)
+  const filteredItems = menuItems.filter((item) => item.category_id === selected)
 
   return (
     <div>
