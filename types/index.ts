@@ -8,6 +8,7 @@ export type MenuItem = {
   category_id: string
   restaurant_id: string
   preparation_time: number
+  image_url?: string
 }
 
 export type Category = {

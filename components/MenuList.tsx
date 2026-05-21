@@ -1,9 +1,15 @@
 "use client"
+
 import { useState } from "react"
 import { Pencil, Trash2, Plus } from "lucide-react"
 import { MenuItem, Category } from "@/types"
+import { supabase } from "@/lib/supabase"
+import { RESTAURANT_ID } from "@/lib/constants"
 
-export default function MenuList({ initialItems, categories }: {
+export default function MenuList({
+  initialItems,
+  categories,
+}: {
   initialItems: MenuItem[]
   categories: Category[]
 }) {
@@ -15,45 +21,121 @@ export default function MenuList({ initialItems, categories }: {
   const [newPrice, setNewPrice] = useState("")
   const [newCategoryId, setNewCategoryId] = useState(categories[0].id)
   const [newIsAvailable, setNewIsAvailable] = useState(true)
+  const [newImage, setNewImage] = useState<File | null>(null)
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const confirmed = confirm("Are you sure you want to delete this item?")
-    if (confirmed) {
-      setItems(items.filter(item => item.id !== id))
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from("menu_items")
+      .delete()
+      .eq("id", id)
+
+    if (error) {
+      alert("Failed to delete item")
+      console.log(error)
+      return
     }
+
+    setItems(items.filter((item) => item.id !== id))
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!newName || !newPrice) {
       alert("Please fill in the name and price!")
       return
     }
+
+    // Upload image if selected
+    let imageUrl = null
+    if (newImage) {
+      const fileExt = newImage.name.split(".").pop()
+      const fileName = `${Date.now()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from("menu-images")
+        .upload(fileName, newImage)
+
+      if (uploadError) {
+        alert("Failed to upload image")
+        console.log(uploadError)
+        return
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("menu-images")
+        .getPublicUrl(fileName)
+
+      imageUrl = urlData.publicUrl
+    }
+
     if (editingItem) {
-      setItems(items.map(item =>
+      // UPDATE existing item
+      const updatedItem = {
+        name: newName,
+        description: newDescription,
+        price: parseFloat(newPrice),
+        category_id: newCategoryId,
+        is_available: newIsAvailable,
+        ...(imageUrl && { image_url: imageUrl }),
+      }
+
+      const { error } = await supabase
+        .from("menu_items")
+        .update(updatedItem)
+        .eq("id", editingItem)
+
+      if (error) {
+        alert("Failed to update item")
+        console.log(error)
+        return
+      }
+
+      setItems(items.map((item) =>
         item.id === editingItem
-          ? { ...item, name: newName, description: newDescription, price: parseFloat(newPrice), category_id: newCategoryId, is_available: newIsAvailable }
+          ? { ...item, ...updatedItem }
           : item
       ))
+
       setEditingItem(null)
     } else {
+      // ADD new item
       const newItem = {
-        id: `item_00${items.length + 1}`,
         name: newName,
         description: newDescription,
         price: parseFloat(newPrice),
         is_popular: false,
         category_id: newCategoryId,
-        restaurant_id: "rest_001",
+        restaurant_id: RESTAURANT_ID,
         preparation_time: 10,
         is_available: newIsAvailable,
+        image_url: imageUrl,
       }
-      setItems([...items, newItem])
+
+      const { data, error } = await supabase
+        .from("menu_items")
+        .insert(newItem)
+        .select()
+        .single()
+
+      if (error) {
+        alert("Failed to add item")
+        console.log(error)
+        return
+      }
+
+      setItems([...items, data])
     }
+
+    // Reset everything
     setShowForm(false)
     setNewName("")
     setNewDescription("")
     setNewPrice("")
     setNewCategoryId(categories[0].id)
+    setNewIsAvailable(true)
+    setNewImage(null)
   }
 
   return (
@@ -64,75 +146,237 @@ export default function MenuList({ initialItems, categories }: {
           <h1 className="text-4xl font-bold text-slate-900">Menu Items</h1>
           <p className="text-gray-500 mt-2">Manage your restaurant menu items</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="bg-amber-700 hover:bg-amber-100 hover:text-black text-white px-4 py-3 rounded-2xl flex items-center gap-3 font-bold shadow-md transition">
-          <Plus size={20} />
-          Add New Item
-        </button>
+              <button
+        onClick={() => setShowForm(true)}
+        className="group relative bg-amber-700 text-white px-4 py-3 rounded-2xl flex items-center gap-3 font-bold shadow-md
+        transition-all duration-300 ease-out hover:text-black
+        hover:bg-amber-600 hover:shadow-xl hover:-translate-y-1
+        active:scale-95"
+      >
+        <Plus
+          size={20}
+          className="transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110"
+        />
+
+        <span className="relative">
+          Add New
+
+          {/* underline animation */}
+          <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-white transition-all duration-300 group-hover:w-full"></span>
+        </span>
+
+        {/* glow effect */}
+        <span className="absolute inset-0 rounded-2xl bg-white/10 opacity-0 group-hover:opacity-100 transition duration-300" />
+      </button>
       </div>
 
-      {/* Form */}
       {showForm && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-4">
-            {editingItem ? "Edit Item" : "Add New Item"}
-          </h2>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between border bg-gray-50 border-gray-200 rounded-lg px-4 py-2">
-              <span className="text-gray-700 text-sm">Availability</span>
-              <button type="button" onClick={() => setNewIsAvailable(!newIsAvailable)}
-                className={`w-12 h-6 rounded-full transition-colors duration-300 ${newIsAvailable ? "bg-green-500" : "bg-gray-300"}`}>
-                <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 mx-auto ${newIsAvailable ? "translate-x-3" : "-translate-x-3"}`} />
-              </button>
-            </div>
-            <input type="text" placeholder="Item name" value={newName} onChange={(e) => setNewName(e.target.value)} className="border bg-gray-50 border-gray-200 rounded-lg px-4 py-2 w-full" />
-            <input type="text" placeholder="Description" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="border bg-gray-50 border-gray-200 rounded-lg px-4 py-2 w-full" />
-            <select value={newCategoryId} onChange={(e) => setNewCategoryId(e.target.value)} className="border bg-gray-50 border-gray-200 rounded-lg px-4 py-2 w-full">
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-            <input type="number" placeholder="Price" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} className="border bg-gray-50 border-gray-200 rounded-lg px-4 py-2 w-full" />
-          </div>
-          <div className="flex gap-3 mt-4">
-            <button onClick={handleSave} className="bg-amber-700 hover:bg-amber-100 hover:text-black shadow-2xl text-white px-4 py-2 rounded-2xl">Save Item</button>
-            <button onClick={() => setShowForm(false)} className="border hover:bg-gray-200 border-gray-200 px-4 py-2 rounded-2xl">Cancel</button>
-          </div>
-        </div>
-      )}
+  <div
+    className="bg-white rounded-3xl border border-gray-200 p-6 mb-6 shadow-xl
+    animate-[fadeInUp_0.25s_ease-out]"
+  >
+    {/* Header */}
+    <h2 className="text-2xl font-bold text-slate-900 mb-6 tracking-tight">
+      {editingItem ? "Edit Item" : "Add New Item"}
+    </h2>
+
+    <div className="grid gap-4">
+
+      {/* Availability */}
+      <div className="flex items-center justify-between border bg-gray-50 border-gray-200 rounded-lg px-4 py-2">
+        <span className="text-sm text-gray-700 font-medium">
+          Availability
+        </span>
+
+        <button
+  type="button"
+  onClick={() => setNewIsAvailable(!newIsAvailable)}
+  className={`relative w-12 h-6 rounded-full transition-colors duration-300
+    ${newIsAvailable ? "bg-green-500" : "bg-gray-300"}`}
+>
+  <span
+    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md
+    transition-transform duration-300 ease-out
+    ${newIsAvailable ? "translate-x-6" : "translate-x-0"}`}
+  />
+</button>
+      </div>
+
+      {/* Image Upload */}
+      <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+        <label className="text-sm text-gray-600 mb-2 block">
+          Item Image
+        </label>
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setNewImage(e.target.files?.[0] || null)}
+          className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
+          file:rounded-lg file:border-0 file:bg-amber-100 file:text-amber-700
+          hover:file:bg-amber-200 transition"
+        />
+      </div>
+
+      {/* Inputs */}
+      {[
+        {
+          value: newName,
+          setter: setNewName,
+          placeholder: "Item name",
+        },
+        {
+          value: newDescription,
+          setter: setNewDescription,
+          placeholder: "Description",
+        },
+        {
+          value: newPrice,
+          setter: setNewPrice,
+          placeholder: "Price",
+        },
+      ].map((field, i) => (
+        <input
+          key={i}
+          value={field.value}
+          onChange={(e) => field.setter(e.target.value)}
+          placeholder={field.placeholder}
+          className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200
+          transition-all duration-200
+          focus:outline-none focus:bg-white focus:border-amber-500
+          focus:ring-2 focus:ring-amber-100
+          hover:border-gray-300"
+        />
+      ))}
+
+      {/* Category */}
+      <select
+        value={newCategoryId}
+        onChange={(e) => setNewCategoryId(e.target.value)}
+        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200
+        transition-all duration-200
+        focus:outline-none focus:bg-white focus:border-amber-500
+        focus:ring-2 focus:ring-amber-100"
+      >
+        {categories.map((cat) => (
+          <option key={cat.id} value={cat.id}>
+            {cat.name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* Buttons */}
+    <div className="flex gap-3 mt-6">
+
+      <button
+        onClick={handleSave}
+        className="group relative bg-amber-700 text-white px-5 py-3 rounded-2xl font-semibold
+        shadow-md transition-all duration-300 ease-out
+        hover:bg-amber-600 hover:shadow-xl hover:-translate-y-1
+        active:scale-95"
+      >
+        Save Item
+      </button>
+
+      <button
+        onClick={() => setShowForm(false)}
+        className="px-5 py-3 rounded-2xl border border-gray-200 font-medium
+        transition-all duration-300 ease-out
+        hover:bg-gray-100 hover:shadow-md hover:-translate-y-1
+        active:scale-95"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
 
       {/* Table */}
       <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] px-8 py-5 border-b border-gray-200 bg-[#f5f5f5] text-gray-700 font-semibold">
+        {/* Table Header */}
+        <div className="grid grid-cols-[auto_2fr_1fr_1fr_1fr_auto] px-8 py-5 border-b border-gray-200 bg-[#f5f5f5] text-gray-700 font-semibold">
+          <p className="w-16">Image</p>
           <p>Item Name</p>
           <p>Category</p>
           <p>Price</p>
           <p>Status</p>
           <p className="text-right">Actions</p>
         </div>
+
+        {/* Table Rows */}
         {items.map((item) => {
           const category = categories.find((cat) => cat.id === item.category_id)
+
           return (
-            <div key={item.id} className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] items-center px-8 py-6 border-b border-gray-100 last:border-b-0">
+            <div
+              key={item.id}
+              className="grid grid-cols-[auto_2fr_1fr_1fr_1fr_auto] items-center px-8 py-6 border-b border-gray-100 last:border-b-0"
+            >
+              {/* Image */}
+              <div className="w-16 h-16 mr-4">
+                {item.image_url ? (
+                  <img
+                    src={item.image_url}
+                    alt={item.name}
+                    className="w-16 h-16 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
+                    No image
+                  </div>
+                )}
+              </div>
+
+              {/* Item Info */}
               <div className="pr-8">
                 <h2 className="text-sm font-bold text-slate-900">{item.name}</h2>
-                <p className="text-gray-500 mt-2 text-sm">{item.description}</p>
+                <p className="text-gray-500 mt-1 text-sm">{item.description}</p>
               </div>
+
+              {/* Category */}
               <div>
-                <span className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">{category?.name}</span>
+                <span className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">
+                  {category?.name}
+                </span>
               </div>
+
+              {/* Price */}
               <div>
                 <p className="font-semibold text-slate-900">${item.price.toFixed(2)}</p>
               </div>
+
+              {/* Status */}
               <div>
-                <span className={`px-4 py-2 rounded-full text-sm font-semibold ${item.is_available ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
+                <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                  item.is_available
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-600"
+                }`}>
                   {item.is_available ? "Available" : "Out of Stock"}
                 </span>
               </div>
+
+              {/* Actions */}
               <div className="flex justify-end gap-5">
-                <button onClick={() => { setEditingItem(item.id); setNewName(item.name); setNewDescription(item.description); setNewPrice(item.price.toString()); setNewCategoryId(item.category_id); setNewIsAvailable(item.is_available); setShowForm(true) }} className="text-amber-700 hover:text-blue-700 transition">
+                <button
+                  onClick={() => {
+                    setEditingItem(item.id)
+                    setNewName(item.name)
+                    setNewDescription(item.description)
+                    setNewPrice(item.price.toString())
+                    setNewCategoryId(item.category_id)
+                    setNewIsAvailable(item.is_available)
+                    setShowForm(true)
+                  }}
+                  className="text-amber-700 hover:text-blue-700 transition"
+                >
                   <Pencil size={22} />
                 </button>
-                <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-black transition">
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  className="text-red-500 hover:text-black transition"
+                >
                   <Trash2 size={22} />
                 </button>
               </div>
