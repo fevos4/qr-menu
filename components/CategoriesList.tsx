@@ -5,8 +5,9 @@ import { Category } from "@/types"
 import { supabase } from "@/lib/supabase"
 import { RESTAURANT_ID } from "@/lib/constants"
 
-export default function CategoriesList({ initialCategories }: {
-  initialCategories: Category[]
+export default function CategoriesList({ initialCategories, restaurantId }: {
+  initialCategories: Category[],
+  restaurantId: string
 }) {
   const [categories, setCategories] = useState(initialCategories)
   const [showForm, setShowForm] = useState(false)
@@ -64,7 +65,7 @@ export default function CategoriesList({ initialCategories }: {
     } else {
       const { data, error } = await supabase
         .from("categories")
-        .insert({ name: newName, restaurant_id: RESTAURANT_ID })
+        .insert({ name: newName, restaurant_id: restaurantId, })
         .select()
         .single()
 

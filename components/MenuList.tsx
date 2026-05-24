@@ -9,9 +9,11 @@ import { RESTAURANT_ID } from "@/lib/constants"
 export default function MenuList({
   initialItems,
   categories,
+  restaurantId,
 }: {
   initialItems: MenuItem[]
   categories: Category[]
+  restaurantId: string 
 }) {
   const [items, setItems] = useState(initialItems)
   const [editingItem, setEditingItem] = useState<string | null>(null)
@@ -19,7 +21,7 @@ export default function MenuList({
   const [newName, setNewName] = useState("")
   const [newDescription, setNewDescription] = useState("")
   const [newPrice, setNewPrice] = useState("")
-  const [newCategoryId, setNewCategoryId] = useState(categories[0].id)
+  const [newCategoryId, setNewCategoryId] = useState(categories[0]?.id ?? "")
   const [newIsAvailable, setNewIsAvailable] = useState(true)
   const [newImage, setNewImage] = useState<File | null>(null)
   const [newIsPopular, setNewIsPopular] = useState(false)
@@ -105,7 +107,7 @@ export default function MenuList({
         price: parseFloat(newPrice),
         is_popular: newIsPopular,
         category_id: newCategoryId,
-        restaurant_id: RESTAURANT_ID,
+        restaurant_id: restaurantId,
         preparation_time: 10,
         is_available: newIsAvailable,
         image_url: imageUrl,
@@ -144,6 +146,7 @@ export default function MenuList({
           <h1 className="text-4xl font-bold text-slate-900 dark:text-white">Menu Items</h1>
           <p className="text-gray-500 dark:text-stone-400 mt-2">Manage your restaurant menu items</p>
         </div>
+
         <button
           onClick={() => setShowForm(true)}
           className="group relative bg-amber-700 text-white px-4 py-3 rounded-2xl flex items-center gap-3 font-bold shadow-md transition-all duration-300 ease-out hover:bg-amber-600 hover:shadow-xl hover:-translate-y-1 active:scale-95"
@@ -152,7 +155,17 @@ export default function MenuList({
           <span>Add New</span>
         </button>
       </div>
-
+      {categories.length === 0 && (
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
+              <p className="text-amber-700 dark:text-amber-400 font-medium">
+                ⚠️ You have no categories yet. Please{" "}
+                <a href="/admin/categories" className="underline font-bold">
+                  add a category first
+                </a>{" "}
+                before adding menu items.
+              </p>
+            </div>
+          )}
       {/* Form */}
       {showForm && (
         <div className="bg-white dark:bg-stone-900 rounded-3xl border border-gray-200 dark:border-stone-700 p-6 mb-6 shadow-xl">

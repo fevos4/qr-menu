@@ -17,32 +17,51 @@ export default function RegisterPage() {
   const handleRegister = async () => {
     setLoading(true)
     setError("")
-
+  
+    if (!restaurantName || !email || !password) {
+      setError("Please fill in all fields!")
+      setLoading(false)
+      return
+    }
+  
+    // Step 1 — Create user account
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password
     })
-
-    if (signUpError || !data.user) {
-      setError(signUpError?.message || "Failed to create account")
+  
+    if (signUpError) {
+      setError(signUpError.message)
       setLoading(false)
       return
     }
-
+  
+    // Get user id — works even if email confirmation is on
+    const userId = data.user?.id ?? data.session?.user?.id
+  
+    if (!userId) {
+      setError("Account created but could not get user. Please check your email to confirm then sign in.")
+      setLoading(false)
+      return
+    }
+  
+    // Step 2 — Create restaurant
     const { error: restaurantError } = await supabase
       .from("restaurants")
       .insert({
         name: restaurantName,
         slogan: slogan,
-        owner_id: data.user.id
+        owner_id: userId
       })
-
+  
     if (restaurantError) {
-      setError("Failed to create restaurant")
+      console.log(restaurantError)
+      setError("Failed to create restaurant: " + restaurantError.message)
       setLoading(false)
       return
     }
-
+  
+    // Step 3 — Redirect
     router.push("/admin")
   }
 
