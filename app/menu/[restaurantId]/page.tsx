@@ -1,5 +1,7 @@
 import { getRestaurant, getCategories, getMenuItems } from "@/lib/data"
 import CategoryTabs from "@/components/Category"
+import AuthButton from "@/components/AuthButton"
+import ThemeToggle from "@/components/ThemeToggle"
 
 export default async function MenuPage({
   params,
@@ -14,9 +16,9 @@ export default async function MenuPage({
 
   if (!restaurant) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-stone-100 to-stone-200">
-        <div className="bg-white px-8 py-6 rounded-3xl shadow-xl border border-stone-200">
-          <p className="text-stone-700 text-lg font-semibold">
+      <div className="min-h-screen flex items-center justify-center bg-stone-100 dark:bg-stone-950">
+        <div className="bg-white dark:bg-stone-900 px-8 py-6 rounded-3xl shadow-xl border border-stone-200 dark:border-stone-800">
+          <p className="text-stone-700 dark:text-stone-300 text-lg font-semibold">
             Restaurant not found
           </p>
         </div>
@@ -25,13 +27,13 @@ export default async function MenuPage({
   }
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-[#f8f6f2] via-stone-50 to-stone-100">
+    <main className="min-h-screen bg-stone-50 dark:bg-stone-950 transition-colors duration-300">
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-stone-900">
+      <div className="relative overflow-hidden bg-stone-900 dark:bg-stone-950 border-b border-stone-800">
 
         {/* Background Glow */}
-        <div className="absolute inset-0 bg-linear-to-r from-amber-900/30 via-transparent to-orange-900/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-900/30 via-transparent to-orange-900/20" />
 
         <div className="relative max-w-7xl mx-auto px-6 md:px-10 py-16 flex justify-between items-center">
 
@@ -46,20 +48,18 @@ export default async function MenuPage({
             <div className="w-24 h-1 bg-amber-500 rounded-full mt-6" />
           </div>
 
-          {/* Right — Sign In Button */}
-          <a
-            href="/auth/login"
-            className="bg-amber-700 hover:bg-amber-600 text-white px-6 py-3 rounded-xl transition font-bold text-sm shrink-0"
-          >
-            Sign In
-          </a>
+          {/* Right — Theme Toggle + Auth */}
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <AuthButton />
+          </div>
 
         </div>
       </div>
 
       {/* Menu Section */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">
-        <div className="bg-white/80 backdrop-blur-sm rounded-4xl shadow-xl border border-stone-200 overflow-hidden transition-all duration-500 hover:shadow-2xl">
+        <div className="bg-white dark:bg-stone-900 rounded-3xl shadow-xl border border-stone-200 dark:border-stone-800 overflow-hidden transition-all duration-500">
           <CategoryTabs
             categories={categories}
             menuItems={menuItems}

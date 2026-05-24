@@ -43,3 +43,17 @@ export async function getMenuItems(restaurantId: string): Promise<MenuItem[]> {
 
   return data
 }
+export async function getRestaurantByOwner(ownerId: string): Promise<Restaurant | null> {
+  const { data, error } = await supabase
+    .from("restaurants")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .single()
+
+  if (error) {
+    console.error(error)
+    return null
+  }
+
+  return data
+}
