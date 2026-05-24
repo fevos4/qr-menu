@@ -4,7 +4,7 @@ import ThemeToggle from "@/components/ThemeToggle"
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-white dark:bg-stone-950 text-stone-900 dark:text-white transition-colors duration-300">
+    <main className="min-h-screen bg-gray-50 dark:bg-stone-950 text-stone-900 dark:text-white transition-colors duration-300">
 
       {/* Navbar */}
       <nav className="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto border-b border-stone-100 dark:border-stone-800">
