@@ -8,11 +8,20 @@ export default function AuthButton() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user)
+      const u = data.user
+      // Only show if customer — not admin
+      if (u && u.user_metadata?.role !== "admin") {
+        setUser(u)
+      }
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+      const u = session?.user
+      if (u && u.user_metadata?.role !== "admin") {
+        setUser(u)
+      } else {
+        setUser(null)
+      }
     })
 
     return () => listener.subscription.unsubscribe()
@@ -21,7 +30,7 @@ export default function AuthButton() {
   if (user) {
     return (
       <div className="flex items-center gap-3">
-        <span className="text-stone-300 dark:text-stone-400 text-sm">
+        <span className="text-stone-300 text-sm">
           {user.user_metadata?.full_name || user.email}
         </span>
         <button
@@ -29,7 +38,7 @@ export default function AuthButton() {
             await supabase.auth.signOut()
             window.location.reload()
           }}
-          className="bg-stone-700 hover:bg-stone-600 dark:bg-stone-800 dark:hover:bg-stone-700 text-white px-4 py-2 rounded-xl transition text-sm font-bold"
+          className="bg-stone-700 hover:bg-stone-600 text-white px-4 py-2 rounded-xl transition text-sm font-bold"
         >
           Sign Out
         </button>

@@ -20,7 +20,7 @@ export default function CustomerSignupPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: name } }
+      options: { data: { full_name: name, role: "customer" } }
     })
 
     if (error) {

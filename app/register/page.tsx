@@ -25,10 +25,13 @@ export default function RegisterPage() {
     }
   
     // Step 1 — Create user account
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password
-    })
+   const { data, error: signUpError } = await supabase.auth.signUp({
+  email,
+  password,
+  options: {
+    data: { role: "admin" }  // ← mark as admin
+  }
+})
   
     if (signUpError) {
       setError(signUpError.message)
