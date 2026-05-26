@@ -33,9 +33,22 @@ export default async function AdminPage() {
   const categories = await getCategories(restaurant.id)
   const recentItems = [...menuItems].reverse().slice(0, 5)
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  const menuUrl = `${appUrl}/menu/${restaurant.id}`
+
   return (
     <div>
-      <h1 className="text-3xl font-bold text-stone-800 dark:text-white mb-2">Dashboard</h1>
+      {/* Header with Preview Button */}
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-3xl font-bold text-stone-800 dark:text-white">Dashboard</h1>
+        <a
+          href={menuUrl}
+          target="_blank"
+          className="flex items-center gap-2 bg-stone-800 dark:bg-stone-700 text-white px-4 py-2 rounded-xl hover:bg-stone-700 dark:hover:bg-stone-600 transition text-sm font-bold"
+        >
+          Preview Menu →
+        </a>
+      </div>
       <p className="mb-8 text-gray-400 dark:text-stone-500">Welcome back, {restaurant.name}!</p>
 
       {/* Stats */}
@@ -61,6 +74,11 @@ export default async function AdminPage() {
         <div className="px-6 py-4 border-b border-stone-100 dark:border-stone-800">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Recently Added Items</h2>
         </div>
+        {recentItems.length === 0 && (
+          <p className="text-center text-stone-500 dark:text-stone-400 py-8">
+            No items yet. Add your first menu item!
+          </p>
+        )}
         {recentItems.map((item) => (
           <div key={item.id} className="flex items-center gap-4 px-6 py-4 border-b border-stone-100 dark:border-stone-800 last:border-b-0">
             {item.image_url && (

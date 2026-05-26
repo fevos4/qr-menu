@@ -7,6 +7,7 @@ const geist = Geist({
   subsets: ["latin"],
 })
 
+
 export const metadata: Metadata = {
   title: "QuickMenu",
   description: "Digitalize your restaurant menu",

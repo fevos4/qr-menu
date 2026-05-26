@@ -5,6 +5,7 @@ import {
   Folder,
   Settings,
   QrCode,
+  Eye,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import LogoutButton from "@/components/LogoutButton"
